@@ -1,4 +1,7 @@
 *.o
+*.o.d
+*.dmp
+*.list
 *.elf
 *.bin
 *.hex
