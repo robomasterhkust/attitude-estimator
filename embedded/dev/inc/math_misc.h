@@ -1,5 +1,6 @@
-#ifndef _MISC_H_
-#define _MISC_H_
+#ifndef _MATH_MISC_H_
+#define _MATH_MISC_H_
+#include "ch.h"
 #include <math.h>
 
 inline float vector_norm(const float* const v, const uint8_t length)

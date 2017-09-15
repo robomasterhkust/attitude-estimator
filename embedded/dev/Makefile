@@ -74,6 +74,11 @@ ifeq ($(USE_FPU),)
   USE_FPU = hard
 endif
 
+# Enable this if you really want to use the STM FWLib.
+ifeq ($(USE_FWLIB),)
+  USE_FWLIB = no
+endif
+
 #
 # Architecture or project specific options
 ##############################################################################
@@ -118,7 +123,8 @@ CSRC = $(STARTUPSRC) \
        $(CHIBIOS)/os/various/syscalls.c \
 			 $(CHIBIOS)/os/hal/lib/streams/memstreams.c \
        $(CHIBIOS)/os/hal/lib/streams/chprintf.c \
-       main.c shellcfg.c flash.c mpu6050.c tft_display.c
+       main.c shellcfg.c flash.c mpu6050.c tft_display.c \
+			 math_misc.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -218,6 +224,22 @@ ULIBS = -lm
 #
 # End of user defines
 ##############################################################################
+
+ifeq ($(USE_FWLIB),yes)
+  include $(CHIBIOS)/stm32f4_fwlib/stm32f4_fwlib.mk
+  CSRC += $(STM32SRC)
+  INCDIR += $(STM32INC)
+  USE_OPT += -DUSE_STDPERIPH_DRIVER
+endif
+
+build/$(PROJECT).bin: build/$(PROJECT).elf
+	$(BIN) build/$(PROJECT).elf build/$(PROJECT).bin
+
+# Program
+upload: build/$(PROJECT).bin
+	#qstlink2 --cli --erase --write build/$(PROJECT).bin
+	#openocd -f interface/stlink-v2.cfg -c "set WORKAREASIZE 0x2000" -f target/stm32f4x_stlink.cfg -c "program build/$(PROJECT).elf verify reset" # Older openocd
+	openocd -f board/stm32f4discovery.cfg -c "reset_config trst_only combined" -c "program build/$(PROJECT).elf verify reset exit" # For openocd 0.9
 
 RULESPATH = $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC
 include $(RULESPATH)/rules.mk
