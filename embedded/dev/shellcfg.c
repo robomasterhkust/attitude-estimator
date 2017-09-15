@@ -114,6 +114,7 @@ void shellStart(void)
 {
   sdStart(SERIAL_CMD, NULL);
 
+  shellInit();
   shellCreateStatic(&shell_cfg1, Shell_thread_wa,
       sizeof(Shell_thread_wa), NORMALPRIO);
 }

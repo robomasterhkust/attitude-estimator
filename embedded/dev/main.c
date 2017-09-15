@@ -15,21 +15,53 @@
 */
 #include "main.h"
 
-static THD_WORKING_AREA(TFT_thread_wa, 4096);
-static THD_FUNCTION(TFT_thread, p)
+PIMUStruct pIMU_1;
+IMUConfigStruct imu1_conf = {&I2CD1, MPU6050_I2C_ADDR_A0_LOW,
+   MPU6050_ACCEL_SCALE_8G, MPU6050_GYRO_SCALE_1000};
+
+static THD_WORKING_AREA(IMU_thread_wa, 4096);
+static THD_FUNCTION(IMU_thread, p)
 {
   (void)p;
-  chRegSetThreadName("TFT Display");
+  chRegSetThreadName("IMU Attitude Estimator");
+  uint8_t init_error;
 
-  tft_init(TFT_HORIZONTAL, CYAN, BLACK, BLACK);
+  pIMU_1 = mpu6050_get();
 
-  tft_printf(3,1,"Robomaster 2018");
-  tft_printf(3,2,"TFTLCD");
+  chThdSleepMilliseconds(100);
+  init_error = mpu6050Init(pIMU_1, &imu1_conf);
 
+  while(init_error)
+  {
+    tft_printf(1,1,"IMU Init Failed: %d", init_error);
+    chThdSleepMilliseconds(500);
+  }
+
+  uint32_t tick = chVTGetSystemTimeX();
   while(true)
   {
-    tft_update();
-    chThdSleepMilliseconds(100);
+    tick += US2ST(MPU6050_UPDATE_PERIOD);
+    if(chVTGetSystemTimeX() < tick)
+      chThdSleepUntil(tick);
+    else
+    {
+      tick = chVTGetSystemTimeX();
+    }
+
+    if(!mpu6050GetData(pIMU_1))
+    {
+      tft_printf(1,1,"AccelX:%8d", (int16_t)(pIMU_1->accelData[0]));
+      tft_printf(1,2,"AccelY:%8d", (int16_t)(pIMU_1->accelData[1]));
+      tft_printf(1,3,"AccelZ:%8d", (int16_t)(pIMU_1->accelData[2]));
+      tft_printf(1,4,"GyroX :%8d", (int16_t)(pIMU_1->gyroData[0]));
+      tft_printf(1,5,"GyroY :%8d", (int16_t)(pIMU_1->gyroData[1]));
+      tft_printf(1,6,"GyroZ :%8d", (int16_t)(pIMU_1->gyroData[2]));
+    }
+    else
+    {
+      tft_clear();
+      tft_printf(1,1,"IMU Reading Error!");
+    }
   }
 }
 
@@ -48,16 +80,18 @@ int main(void) {
   halInit();
   chSysInit();
 
-  shellStart();
+  //shellStart();
 
-  chThdCreateStatic(TFT_thread_wa, sizeof(TFT_thread_wa),
-  NORMALPRIO - 10,
-                    TFT_thread, NULL);
+  tft_init(TFT_HORIZONTAL, CYAN, BLACK, BLACK);
+
+  chThdCreateStatic(IMU_thread_wa, sizeof(IMU_thread_wa),
+  NORMALPRIO + 5,
+                    IMU_thread, NULL);
 
   while (true)
   {
     palTogglePad(GPIOB,GPIOB_LED);
-    chThdSleepMilliseconds(1000);
+    chThdSleepMilliseconds(500);
   }
 
   return 0;

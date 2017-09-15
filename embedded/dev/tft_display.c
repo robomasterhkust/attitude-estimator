@@ -676,6 +676,19 @@ void tft_update(void)
 	}
 }
 
+static THD_WORKING_AREA(TFT_thread_wa, 4096);
+static THD_FUNCTION(TFT_thread, p)
+{
+  (void)p;
+  chRegSetThreadName("TFT Display");
+
+  while(true)
+  {
+    tft_update();
+    chThdSleepMilliseconds(TFT_UPDATE_PERIOD_MS);
+  }
+}
+
 void tft_init(uint8_t orientation, uint16_t in_bg_color,
   uint16_t in_text_color, uint16_t in_text_color_sp)
 {
@@ -705,4 +718,8 @@ void tft_init(uint8_t orientation, uint16_t in_bg_color,
 			bg_color_prev[x][y] = in_bg_color;
 		}
 	}
+
+  chThdCreateStatic(TFT_thread_wa, sizeof(TFT_thread_wa),
+  NORMALPRIO - 10,
+                    TFT_thread, NULL);
 }

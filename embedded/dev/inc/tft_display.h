@@ -3,6 +3,7 @@
 
 #include "1.8 TFT_ascii.h"
 
+#define TFT_UPDATE_PERIOD_MS    50U
 // SPI, RST, DC
 #define TFT_RST_PIN		   0U
 #define TFT_DC_PIN		   5U
