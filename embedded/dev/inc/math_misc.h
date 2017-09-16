@@ -4,18 +4,20 @@
 #include <math.h>
 
 typedef struct {
-  uint8_t init;
   float a1;
   float a2;
   float b0;
   float b1;
   float b2;
-} lpfilterCoefStruct;
 
-typedef struct {
-  lpfilterCoefStruct *coef;
   float data[2];
 } lpfilterStruct;
+
+typedef enum {
+  ROLL = 0,
+  PITCH = 1,
+  YAW = 2
+} euler_angle_t;
 
 static inline float vector_norm(const float v[], const uint8_t length)
 {
@@ -23,7 +25,7 @@ static inline float vector_norm(const float v[], const uint8_t length)
   float norm = 0.0f;
   for (i = 0; i < length; i++)
     norm += v[i]*v[i];
-  return sqrt(norm);
+  return sqrtf(norm);
 }
 
 static inline void vector_normalize(float v[], const uint8_t length)
@@ -49,6 +51,54 @@ static inline void q_derivative(const float q[4], const float v[3],
   dq[1] = 0.5 * (v[0] *  q[0] + v[1] * -q[3] + v[2] *  q[2]);
   dq[2] = 0.5 * (v[0] *  q[3] + v[1] *  q[0] + v[2] * -q[1]);
   dq[3] = 0.5 * (v[0] * -q[2] + v[1] *  q[1] + v[2] *  q[0]);
+}
+
+/**
+ * create Euler angles vector from the quaternion
+ */
+static inline void quarternion2euler(const float q[4], float euler_angle[3])
+{
+  euler_angle[ROLL] = atan2f(2.0f * (q[0] * q[1] + q[2] * q[3]), 1.0f - 2.0f * (q[1] * q[1] + q[2] * q[2]));
+  euler_angle[PITCH] = asinf(2.0f * (q[0] * q[2] - q[3] * q[1]));
+  euler_angle[YAW] = atan2f(2.0f * (q[0] * q[3] + q[1] * q[2]), 1.0f - 2.0f * (q[2] * q[2] + q[3] * q[3]));
+}
+
+static inline void rotm2quarternion(const float rotm[3][3], float q[4])
+{
+  float tr = rotm[0][0] + rotm[1][1] + rotm[2][2];
+
+  if (tr > 0.0f) {
+    float s = sqrtf(tr + 1.0f);
+    q[0] = s * 0.5f;
+    s = 0.5f / s;
+    q[1] = (rotm[2][1] - rotm[1][2]) * s;
+    q[2] = (rotm[0][2] - rotm[2][0]) * s;
+    q[3] = (rotm[1][0] - rotm[0][1]) * s;
+
+  } else {
+    /* Find maximum diagonal element in dcm
+    * store index in dcm_i */
+    int dcm_i = 0;
+
+    uint8_t i;
+    for (i = 1; i < 3; i++) {
+      if (rotm[i][i] > rotm[dcm_i][dcm_i]) {
+        dcm_i = i;
+      }
+    }
+
+    int dcm_j = (dcm_i + 1) % 3;
+    int dcm_k = (dcm_i + 2) % 3;
+    float s = sqrtf((rotm[dcm_i][dcm_i] - rotm[dcm_j][dcm_j] -
+         rotm[dcm_k][dcm_k]) + 1.0f);
+    q[dcm_i + 1] = s * 0.5f;
+    s = 0.5f / s;
+    q[dcm_j + 1] = (rotm[dcm_i][dcm_j] + rotm[dcm_j][dcm_i]) * s;
+    q[dcm_k + 1] = (rotm[dcm_k][dcm_i] + rotm[dcm_i][dcm_k]) * s;
+    q[0] = (rotm[dcm_k][dcm_j] - rotm[dcm_j][dcm_k]) * s;
+  }
+
+  vector_normalize(q,4);
 }
 
 void lpfilter_init(lpfilterStruct* const lp,

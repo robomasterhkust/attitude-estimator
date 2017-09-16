@@ -24,16 +24,16 @@ static THD_FUNCTION(IMU_thread, p)
 {
   (void)p;
   chRegSetThreadName("IMU Attitude Estimator");
-  uint8_t init_error;
+  uint8_t errorCode;
 
   pIMU_1 = mpu6050_get();
 
   chThdSleepMilliseconds(100);
-  init_error = mpu6050Init(pIMU_1, &imu1_conf);
+  errorCode = attitude_imu_init(pIMU_1, &imu1_conf);
 
-  while(init_error)
+  while(errorCode)
   {
-    tft_printf(1,1,"IMU Init Failed: %d", init_error);
+    tft_printf(1,1,"IMU Init Failed: %d", errorCode);
     chThdSleepMilliseconds(500);
   }
 
@@ -48,19 +48,11 @@ static THD_FUNCTION(IMU_thread, p)
       tick = chVTGetSystemTimeX();
     }
 
-    if(!mpu6050GetData(pIMU_1))
-    {
-      tft_printf(1,1,"AccelX:%8d", (int16_t)(pIMU_1->accelData[0]));
-      tft_printf(1,2,"AccelY:%8d", (int16_t)(pIMU_1->accelData[1]));
-      tft_printf(1,3,"AccelZ:%8d", (int16_t)(pIMU_1->accelData[2]));
-      tft_printf(1,4,"GyroX :%8d", (int16_t)(pIMU_1->gyroData[0]));
-      tft_printf(1,5,"GyroY :%8d", (int16_t)(pIMU_1->gyroData[1]));
-      tft_printf(1,6,"GyroZ :%8d", (int16_t)(pIMU_1->gyroData[2]));
-    }
-    else
+    errorCode = attitude_update(pIMU_1);
+    if(errorCode)
     {
       tft_clear();
-      tft_printf(1,1,"IMU Reading Error!");
+      tft_printf(1,1,"IMU Reading Error %d", errorCode);
     }
   }
 }
@@ -90,8 +82,11 @@ int main(void) {
 
   while (true)
   {
-    palTogglePad(GPIOB,GPIOB_LED);
-    chThdSleepMilliseconds(500);
+    tft_printf(1,1,"Roll: %4d", (int16_t)(pIMU_1->euler_angle[ROLL] * 180.0f/M_PI));
+    tft_printf(1,2,"Pitch:%4d", (int16_t)(pIMU_1->euler_angle[PITCH] * 180.0f/M_PI));
+    tft_printf(1,3,"Yaw:  %4d", (int16_t)(pIMU_1->euler_angle[YAW] * 180.0f/M_PI));
+    tft_printf(1,4,"DT:   %4d", (int16_t)(pIMU_1->dt * 1000000));
+    chThdSleepMilliseconds(50);
   }
 
   return 0;

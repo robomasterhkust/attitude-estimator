@@ -9,6 +9,7 @@
 #include "chprintf.h"
 #include "tft_display.h"
 #include "math_misc.h"
+#include "attitude.h"
 
 #define SERIAL_CMD       &SD3
 #define SERIAL_DATA      &SD3

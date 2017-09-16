@@ -1,8 +1,14 @@
 #ifndef _MPU6050_H_
 #define _MPU6050_H_
 
-#define MPU6050_UPDATE_FREQ                     100U  //Read MPU @ 50Hz
-#define MPuU6050_FLASH_ADDR               0x08040000
+#define MPU6050_UPDATE_FREQ                         1000.0f
+#define MPuU6050_FLASH_ADDR                      0x08040000
+
+typedef enum {
+  X = 0U,
+  Y = 1U,
+  Z = 2U
+} mpu_axis_mask_t;
 
 typedef enum {
   MPU6050_I2C_ADDR_A0_LOW = 0x68,
@@ -23,7 +29,16 @@ typedef enum {
   MPU6050_ACCEL_SCALE_16G = 3
 } mpu_accel_scale_t;
 
-#define MPU6050_UPDATE_PERIOD     1000000U/MPU6050_UPDATE_FREQ
+typedef enum {
+  IMU_OK = 0,
+  IMU_I2C_ERROR1 = 1,
+  IMU_I2C_ERROR2 = 2,
+  IMU_I2C_ERROR3 = 3,
+  IMU_ATT_TIMEOUT = 4,
+  IMU_CORRUPTED_Q_DATA = 5,
+} imu_att_error_t;
+
+#define MPU6050_UPDATE_PERIOD     1000000.0f/MPU6050_UPDATE_FREQ
 
 typedef struct tagIMUStruct {
   float accelData[3];     /* Accelerometer data.             */
@@ -32,14 +47,18 @@ typedef struct tagIMUStruct {
   float gyroFiltered[3];  /* Filtered gyro data.    */
   float accelBias[3];     /* Accelerometer bias.             */
   float gyroBias[3];      /* Gyroscope bias.                 */
-  float transAccelBias[3]; /* when pitch >90degree            */
-  float v2Filtered[3];    /* Filtered directionattr of gravity.  */
   float qIMU[4];          /* Attitude quaternion of the IMU. */
+  float rot_matrix[3][3]; /* Rotation matrix of the IMU. */
+  float euler_angle[3];   /* Euler angle of the IMU. */
 
   I2CDriver* mpu_i2c;
   uint8_t addr;
   float accel_psc;
   float gyro_psc;
+
+  uint8_t inited;
+  uint32_t tprev;
+  float dt;
 } __attribute__((packed)) IMUStruct, *PIMUStruct;
 
 typedef struct {

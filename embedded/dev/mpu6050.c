@@ -86,7 +86,6 @@ I2CErrorStruct* mpuGetError(void)
  */
 static void imuStructureInit(PIMUStruct pIMU, const IMUConfigStruct* const imu_conf)
 {
-  uint8_t i;
   /* Initialize to zero. */
   memset((void *)pIMU, 0, sizeof(IMUStruct));
 
@@ -148,7 +147,7 @@ uint8_t mpu6050GetData(PIMUStruct pIMU)
     if (g_i2cErrorInfo.last_i2c_error) {
       g_i2cErrorInfo.i2c_error_counter++;
     }
-    return 1;
+    return IMU_I2C_ERROR1;
   }
 
   mpu6050Data[0] = (int16_t)((mpu6050RXData[ 0]<<8) | mpu6050RXData[ 1]); /* Accel X */
@@ -159,18 +158,22 @@ uint8_t mpu6050GetData(PIMUStruct pIMU)
   mpu6050Data[5] = (int16_t)((mpu6050RXData[12]<<8) | mpu6050RXData[13]); /* Gyro Z  */
 
   /* X: */
-  pIMU->accelData[0] = (float)mpu6050Data[0] * pIMU->accel_psc;
-  pIMU->gyroData[0]  = (float)mpu6050Data[3] * pIMU->gyro_psc;
+  pIMU->accelData[X] = (float)mpu6050Data[0] * pIMU->accel_psc;
+  pIMU->gyroData[X]  = (float)mpu6050Data[3] * pIMU->gyro_psc;
 
   /* Y: */
-  pIMU->accelData[1] = (float)mpu6050Data[1] * pIMU->accel_psc;
-  pIMU->gyroData[1]  = (float)mpu6050Data[4] * pIMU->gyro_psc;
+  pIMU->accelData[Y] = (float)mpu6050Data[1] * pIMU->accel_psc;
+  pIMU->gyroData[Y]  = (float)mpu6050Data[4] * pIMU->gyro_psc;
 
   /* Z: */
-  pIMU->accelData[2] = (float)mpu6050Data[2] * pIMU->accel_psc;
-  pIMU->gyroData[2]  = (float)mpu6050Data[5] * pIMU->gyro_psc;
+  pIMU->accelData[Z] = (float)mpu6050Data[2] * pIMU->accel_psc;
+  pIMU->gyroData[Z]  = (float)mpu6050Data[5] * pIMU->gyro_psc;
 
-  return 0;
+  uint32_t tcurr = chVTGetSystemTimeX();
+  pIMU->dt = ST2US(tcurr - pIMU->tprev)/1000000.0f;
+  pIMU->tprev = tcurr;
+
+  return IMU_OK;
 }
 
 /**
@@ -203,7 +206,7 @@ uint8_t mpu6050Init(PIMUStruct pIMU, const IMUConfigStruct* const imu_conf)
       g_i2cErrorInfo.i2c_error_counter++;
     }
     g_i2cErrorInfo.errorFlag |= 0x02;
-    return 1;
+    return IMU_I2C_ERROR1;
   }
 
   /* Wait 100 ms for the MPU6050 to reset */
@@ -224,7 +227,7 @@ uint8_t mpu6050Init(PIMUStruct pIMU, const IMUConfigStruct* const imu_conf)
 //      debugLog("E:mpu6050i-rst");
     }
     g_i2cErrorInfo.errorFlag |= 0x04;
-    return 2;
+    return IMU_I2C_ERROR2;
   }
 
   /* Configure the MPU6050 sensor        */
@@ -248,8 +251,10 @@ uint8_t mpu6050Init(PIMUStruct pIMU, const IMUConfigStruct* const imu_conf)
      // debugLog("E:mpu6050i-cfg");
     }
     g_i2cErrorInfo.errorFlag |= 0x08;
-    return 3;
+    return IMU_I2C_ERROR3;
   }
 
-  return 0;
+  pIMU->tprev = chVTGetSystemTimeX();
+  pIMU->inited = 1;
+  return IMU_OK;
 }

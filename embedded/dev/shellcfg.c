@@ -75,23 +75,23 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
 {
   (void) argc,argv;
 
-  float test[30],output[30];
-  uint8_t i;
-  for (i = 0; i < 30; i++)
-    test[i] = 0.0f;
-  test[0] = 1000.0f;
-
-  lpfilterCoefStruct lpcoef;
-  lpfilterStruct lptest = {&lpcoef};
-
-  lpfilter_init(&lptest, 250, 30);
-  lpfilter_init(&lptest, 250, 60);
-
-  for (i = 0; i < 30; i++)
+  if(attitude_imu_init(pIMU_1, NULL) == IMU_ATT_TIMEOUT)
   {
-    output[i] = lpfilter_apply(&lptest, test[i]);
-    chprintf(chp,"%d\r\n",(int16_t)output[i]);
+    chprintf(chp,"IMU timeout");
+    return;
   }
+
+  chprintf(chp,"%f,%f,%f\r\n",
+    pIMU_1->rot_matrix[0][0],pIMU_1->rot_matrix[0][1],pIMU_1->rot_matrix[0][2]);
+  chprintf(chp,"%f,%f,%f\r\n",
+    pIMU_1->rot_matrix[1][0],pIMU_1->rot_matrix[1][1],pIMU_1->rot_matrix[1][2]);
+  chprintf(chp,"%f,%f,%f\r\n",
+    pIMU_1->rot_matrix[2][0],pIMU_1->rot_matrix[2][1],pIMU_1->rot_matrix[2][2]);
+
+  chprintf(chp,"%f\r\n",pIMU_1->qIMU[0]);
+  chprintf(chp,"%f\r\n",pIMU_1->qIMU[1]);
+  chprintf(chp,"%f\r\n",pIMU_1->qIMU[2]);
+  chprintf(chp,"%f\r\n",pIMU_1->qIMU[3]);
 }
 
 void cmd_data(BaseSequentialStream * chp, int argc, char *argv[])
