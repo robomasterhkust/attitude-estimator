@@ -1,6 +1,8 @@
 #include "main.h"
 #include "shell.h"
 
+static PIMUStruct pIMU_1;
+
 #define SYNC_SEQ  0xaabbccdd
 static void transmit_host
   (BaseSequentialStream* chp,
@@ -23,13 +25,12 @@ static void transmit_host
     chSequentialStreamPut(chp, *byte++);
 }
 
-#include <math.h>
 #define HOST_TRANSMIT_FREQ  100U
 static THD_WORKING_AREA(Host_thread_wa, 512);
 static THD_FUNCTION(Host_thread, p)
 {
   (void)p;
-  chRegSetThreadName("Test");
+  chRegSetThreadName("Host tramsmitter");
 
   if((*SERIAL_DATA).state != SD_READY)
     sdStart(SERIAL_DATA, NULL);
@@ -52,10 +53,14 @@ static THD_FUNCTION(Host_thread, p)
       break;
     }
 
-    txbuf_d[0] = (int16_t)(tick % 10000);
-    txbuf_f[0] = sinf((float)(txbuf_d[0] - 5000) * M_PI/5000.0f);
+    txbuf_f[0] = pIMU_1->accelData[0];
+    txbuf_f[1] = pIMU_1->accelData[1];
+    txbuf_f[2] = pIMU_1->accelData[2];
+    txbuf_f[3] = pIMU_1->gyroData[0];
+    txbuf_f[4] = pIMU_1->gyroData[1];
+    txbuf_f[5] = pIMU_1->gyroData[2];
 
-    transmit_host(chp, txbuf_d, txbuf_f, 1, 1);
+    transmit_host(chp, txbuf_d, txbuf_f, 0, 6);
   }
 
   while(true)
@@ -70,7 +75,23 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
 {
   (void) argc,argv;
 
-  chprintf(chp,"Shell Working");
+  float test[30],output[30];
+  uint8_t i;
+  for (i = 0; i < 30; i++)
+    test[i] = 0.0f;
+  test[0] = 1000.0f;
+
+  lpfilterCoefStruct lpcoef;
+  lpfilterStruct lptest = {&lpcoef};
+
+  lpfilter_init(&lptest, 250, 30);
+  lpfilter_init(&lptest, 250, 60);
+
+  for (i = 0; i < 30; i++)
+  {
+    output[i] = lpfilter_apply(&lptest, test[i]);
+    chprintf(chp,"%d\r\n",(int16_t)output[i]);
+  }
 }
 
 void cmd_data(BaseSequentialStream * chp, int argc, char *argv[])
@@ -90,7 +111,7 @@ void cmd_data(BaseSequentialStream * chp, int argc, char *argv[])
     sec = (finalNum < 60 ? finalNum : 60);
   }
 
-  chprintf(chp,"Data transmission start in %d seconds...", sec);
+  chprintf(chp,"Data transmission start in %d seconds...\n", sec);
   chThdSleepSeconds(sec);
 
   chThdCreateStatic(Host_thread_wa, sizeof(Host_thread_wa),
@@ -112,6 +133,8 @@ static const ShellConfig shell_cfg1 =
 
 void shellStart(void)
 {
+  pIMU_1 = mpu6050_get();
+
   sdStart(SERIAL_CMD, NULL);
 
   shellInit();

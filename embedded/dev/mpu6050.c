@@ -84,7 +84,7 @@ I2CErrorStruct* mpuGetError(void)
  * @param  pIMU - pointer to IMU data structure;
  * @param  fAddrLow - IMU address pin A0 is pulled low flag.
  */
-static void imuStructureInit(PIMUStruct pIMU, IMUConfigStruct* imu_conf)
+static void imuStructureInit(PIMUStruct pIMU, const IMUConfigStruct* const imu_conf)
 {
   uint8_t i;
   /* Initialize to zero. */
@@ -179,7 +179,7 @@ uint8_t mpu6050GetData(PIMUStruct pIMU)
  * @return 1 - if initialization was successful;
  *         0 - if initialization failed.
  */
-uint8_t mpu6050Init(PIMUStruct pIMU, IMUConfigStruct* imu_conf)
+uint8_t mpu6050Init(PIMUStruct pIMU, const IMUConfigStruct* const imu_conf)
 {
   msg_t status = MSG_OK;
 

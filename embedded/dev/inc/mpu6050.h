@@ -61,7 +61,7 @@ extern "C" {
   PIMUStruct mpu6050_get(void);
   I2CErrorStruct* mpuGetError(void);
 
-  uint8_t mpu6050Init(PIMUStruct pIMU, IMUConfigStruct* imu_conf);
+  uint8_t mpu6050Init(PIMUStruct pIMU, const IMUConfigStruct* const imu_conf);
   uint8_t mpu6050GetData(PIMUStruct pIMU);
 
 #ifdef __cplusplus

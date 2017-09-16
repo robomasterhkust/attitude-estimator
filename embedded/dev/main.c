@@ -15,8 +15,8 @@
 */
 #include "main.h"
 
-PIMUStruct pIMU_1;
-IMUConfigStruct imu1_conf = {&I2CD1, MPU6050_I2C_ADDR_A0_LOW,
+static PIMUStruct pIMU_1;
+static const IMUConfigStruct imu1_conf = {&I2CD1, MPU6050_I2C_ADDR_A0_LOW,
    MPU6050_ACCEL_SCALE_8G, MPU6050_GYRO_SCALE_1000};
 
 static THD_WORKING_AREA(IMU_thread_wa, 4096);
@@ -80,7 +80,7 @@ int main(void) {
   halInit();
   chSysInit();
 
-  //shellStart();
+  shellStart();
 
   tft_init(TFT_HORIZONTAL, CYAN, BLACK, BLACK);
 
