@@ -3,6 +3,8 @@
 #include "ch.h"
 #include <math.h>
 
+#define M_PI_2_F    (float)(M_PI/2)
+
 typedef struct {
   float a1;
   float a2;
@@ -99,6 +101,24 @@ static inline void rotm2quarternion(const float rotm[3][3], float q[4])
   }
 
   vector_normalize(q,4);
+}
+
+static inline void rotm2eulerangle(const float rotm[3][3], float euler_angle[3])
+{
+  euler_angle[1] = asinf(-rotm[2][0]);
+
+  if (fabsf(euler_angle[1] - M_PI_2_F) < 1.0e-3f) {
+    euler_angle[0] = 0.0f;
+    euler_angle[2] = atan2f(rotm[1][2] - rotm[0][1], rotm[0][2] + rotm[1][1]) + euler_angle[0];
+
+  } else if (fabsf(euler_angle[1] + M_PI_2_F) < 1.0e-3f) {
+    euler_angle[0] = 0.0f;
+    euler_angle[2] = atan2f(rotm[1][2] - rotm[0][1], rotm[0][2] + rotm[1][1]) - euler_angle[0];
+
+  } else {
+    euler_angle[0] = atan2f(rotm[2][1], rotm[2][2]);
+    euler_angle[2] = atan2f(rotm[1][0], rotm[0][0]);
+  }
 }
 
 void lpfilter_init(lpfilterStruct* const lp,

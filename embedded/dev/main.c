@@ -85,7 +85,7 @@ int main(void) {
     tft_printf(1,1,"Roll: %4d", (int16_t)(pIMU_1->euler_angle[ROLL] * 180.0f/M_PI));
     tft_printf(1,2,"Pitch:%4d", (int16_t)(pIMU_1->euler_angle[PITCH] * 180.0f/M_PI));
     tft_printf(1,3,"Yaw:  %4d", (int16_t)(pIMU_1->euler_angle[YAW] * 180.0f/M_PI));
-    tft_printf(1,4,"DT:   %4d", (int16_t)(pIMU_1->dt * 1000000));
+
     chThdSleepMilliseconds(50);
   }
 

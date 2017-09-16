@@ -53,12 +53,12 @@ static THD_FUNCTION(Host_thread, p)
       break;
     }
 
-    txbuf_f[0] = pIMU_1->accelData[0];
-    txbuf_f[1] = pIMU_1->accelData[1];
-    txbuf_f[2] = pIMU_1->accelData[2];
-    txbuf_f[3] = pIMU_1->gyroData[0];
-    txbuf_f[4] = pIMU_1->gyroData[1];
-    txbuf_f[5] = pIMU_1->gyroData[2];
+    txbuf_f[0] = pIMU_1->accelFiltered[0];
+    txbuf_f[1] = pIMU_1->accelFiltered[1];
+    txbuf_f[2] = pIMU_1->accelFiltered[2];
+    txbuf_f[3] = pIMU_1->gyroFiltered[0];
+    txbuf_f[4] = pIMU_1->gyroFiltered[1];
+    txbuf_f[5] = pIMU_1->gyroFiltered[2];
 
     transmit_host(chp, txbuf_d, txbuf_f, 0, 6);
   }
@@ -75,12 +75,6 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
 {
   (void) argc,argv;
 
-  if(attitude_imu_init(pIMU_1, NULL) == IMU_ATT_TIMEOUT)
-  {
-    chprintf(chp,"IMU timeout");
-    return;
-  }
-
   chprintf(chp,"%f,%f,%f\r\n",
     pIMU_1->rot_matrix[0][0],pIMU_1->rot_matrix[0][1],pIMU_1->rot_matrix[0][2]);
   chprintf(chp,"%f,%f,%f\r\n",
@@ -88,10 +82,12 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
   chprintf(chp,"%f,%f,%f\r\n",
     pIMU_1->rot_matrix[2][0],pIMU_1->rot_matrix[2][1],pIMU_1->rot_matrix[2][2]);
 
-  chprintf(chp,"%f\r\n",pIMU_1->qIMU[0]);
-  chprintf(chp,"%f\r\n",pIMU_1->qIMU[1]);
-  chprintf(chp,"%f\r\n",pIMU_1->qIMU[2]);
-  chprintf(chp,"%f\r\n",pIMU_1->qIMU[3]);
+  float euler_angle[3];
+  rotm2eulerangle(pIMU_1->rot_matrix, euler_angle);
+
+  chprintf(chp,"%f\r\n",euler_angle[ROLL] * 180.0f/M_PI);
+  chprintf(chp,"%f\r\n",euler_angle[PITCH] * 180.0f/M_PI);
+  chprintf(chp,"%f\r\n",euler_angle[YAW] * 180.0f/M_PI);
 }
 
 void cmd_data(BaseSequentialStream * chp, int argc, char *argv[])

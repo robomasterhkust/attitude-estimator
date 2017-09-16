@@ -55,14 +55,15 @@ uint8_t attitude_update(PIMUStruct pIMU)
       corr[i] += accel_corr[i] * ATT_W_ACCEL;
 
     if(spinRate < 0.175f)
-    {
-      pIMU->gyroBias[i] += corr[i] * (ATT_W_GYRO * pIMU->dt);
+      for (i = 0; i < 3; i++)
+      {
+        pIMU->gyroBias[i] += corr[i] * (ATT_W_GYRO * pIMU->dt);
 
-      if(pIMU->gyroBias[i] > GYRO_BIAS_MAX)
-        pIMU->gyroBias[i] = GYRO_BIAS_MAX;
-      if(pIMU->gyroBias[i] > -GYRO_BIAS_MAX)
-        pIMU->gyroBias[i] = -GYRO_BIAS_MAX;
-    }
+        if(pIMU->gyroBias[i] > GYRO_BIAS_MAX)
+          pIMU->gyroBias[i] = GYRO_BIAS_MAX;
+        if(pIMU->gyroBias[i] < -GYRO_BIAS_MAX)
+          pIMU->gyroBias[i] = -GYRO_BIAS_MAX;
+      }
   }
 
   for (i = 0; i < 3; i++)
