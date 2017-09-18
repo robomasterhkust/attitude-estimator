@@ -3,6 +3,9 @@
 #include "ch.h"
 #include <math.h>
 
+#define GRAV               9.80665f
+
+#define FLT_EPSILON        1.1920929e-07F
 #define M_PI_2_F    (float)(M_PI/2)
 
 typedef struct {
@@ -46,6 +49,37 @@ static inline void vector3_cross(const float a[3], const float b[3],
   result[2] = a[0]*b[1] - a[1]*b[0];
 }
 
+/**
+ * @ brief: inverse know square matrix using functions in LAPACK
+ * @ dependency:s
+ * * LU decomoposition of a general matrix
+ * void dgetrf_(int* M, int *N, double* A, int* lda, int* IPIV, int* INFO);
+ *
+ * * generate inverse of a matrix given its LU decomposition
+ * void dgetri_(int* N, double* A, int* lda, int* IPIV, double* WORK, int* lwork, int* INFO);
+ */
+static inline uint8_t matrix_invert3(const float src[3][3], float dst[3][3])
+{
+    float det = src[0][0] * (src[1][1] * src[2][2] - src[1][2] * src[2][1]) -
+                src[0][1] * (src[1][0] * src[2][2] - src[1][2] * src[2][0]) +
+                src[0][2] * (src[1][0] * src[2][1] - src[1][1] * src[2][0]);
+
+    if (fabsf(det) < FLT_EPSILON)
+      return false;           // Singular matrix
+
+    dst[0][0] = (src[1][1] * src[2][2] - src[1][2] * src[2][1]) / det;
+    dst[1][0] = (src[1][2] * src[2][0] - src[1][0] * src[2][2]) / det;
+    dst[2][0] = (src[1][0] * src[2][1] - src[1][1] * src[2][0]) / det;
+    dst[0][1] = (src[0][2] * src[2][1] - src[0][1] * src[2][2]) / det;
+    dst[1][1] = (src[0][0] * src[2][2] - src[0][2] * src[2][0]) / det;
+    dst[2][1] = (src[0][1] * src[2][0] - src[0][0] * src[2][1]) / det;
+    dst[0][2] = (src[0][1] * src[1][2] - src[0][2] * src[1][1]) / det;
+    dst[1][2] = (src[0][2] * src[1][0] - src[0][0] * src[1][2]) / det;
+    dst[2][2] = (src[0][0] * src[1][1] - src[0][1] * src[1][0]) / det;
+
+    return true;
+}
+
 static inline void q_derivative(const float q[4], const float v[3],
   float dq[4])
 {
@@ -63,6 +97,27 @@ static inline void quarternion2euler(const float q[4], float euler_angle[3])
   euler_angle[ROLL] = atan2f(2.0f * (q[0] * q[1] + q[2] * q[3]), 1.0f - 2.0f * (q[1] * q[1] + q[2] * q[2]));
   euler_angle[PITCH] = asinf(2.0f * (q[0] * q[2] - q[3] * q[1]));
   euler_angle[YAW] = atan2f(2.0f * (q[0] * q[3] + q[1] * q[2]), 1.0f - 2.0f * (q[2] * q[2] + q[3] * q[3]));
+}
+
+/**
+ * @source from MatrixMath.cpp from Arduino
+ * @brief for known size matrix multiplication, no check
+ * A = input matrix (m x p)
+ * x = input vector (p x n)
+ * m = number of rows in A
+ * n = number of columns in A = number of rows in x
+ * b = output matrix = A*x
+ */
+static inline void matrix33_multiply_vector3(const float A[3][3], const float x[3], float b[3])
+{
+  uint8_t i, j;
+
+  for (i = 0; i < 3; i++)
+  {
+    b[i] = 0.0f;
+    for (j = 0; j < 3; j++)
+      b[i] += A[i][j] * x[j];
+  }
 }
 
 static inline void rotm2quarternion(const float rotm[3][3], float q[4])

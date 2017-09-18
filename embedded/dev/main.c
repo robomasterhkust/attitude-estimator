@@ -15,6 +15,8 @@
 */
 #include "main.h"
 
+thread_reference_t imu_Thd = NULL;
+
 static PIMUStruct pIMU_1;
 static const IMUConfigStruct imu1_conf = {&I2CD1, MPU6050_I2C_ADDR_A0_LOW,
    MPU6050_ACCEL_SCALE_8G, MPU6050_GYRO_SCALE_1000};
@@ -54,6 +56,13 @@ static THD_FUNCTION(IMU_thread, p)
       tft_clear();
       tft_printf(1,1,"IMU Reading Error %d", errorCode);
     }
+
+    if(pIMU_1->accelerometer_not_calibrated || pIMU_1->gyroscope_not_calibrated)
+    {
+      chSysLock();
+      chThdSuspendS(&imu_Thd);
+      chSysUnlock();
+    }
   }
 }
 
@@ -77,7 +86,7 @@ int main(void) {
   tft_init(TFT_HORIZONTAL, CYAN, BLACK, BLACK);
 
   chThdCreateStatic(IMU_thread_wa, sizeof(IMU_thread_wa),
-  NORMALPRIO + 5,
+                    NORMALPRIO + 5,
                     IMU_thread, NULL);
 
   while (true)

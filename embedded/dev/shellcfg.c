@@ -1,6 +1,8 @@
 #include "main.h"
 #include "shell.h"
 
+#include <string.h>
+
 static PIMUStruct pIMU_1;
 
 #define SYNC_SEQ  0xaabbccdd
@@ -53,14 +55,11 @@ static THD_FUNCTION(Host_thread, p)
       break;
     }
 
-    txbuf_f[0] = pIMU_1->accelFiltered[0];
-    txbuf_f[1] = pIMU_1->accelFiltered[1];
-    txbuf_f[2] = pIMU_1->accelFiltered[2];
-    txbuf_f[3] = pIMU_1->gyroFiltered[0];
-    txbuf_f[4] = pIMU_1->gyroFiltered[1];
-    txbuf_f[5] = pIMU_1->gyroFiltered[2];
+    txbuf_f[0] = pIMU_1->euler_angle[ROLL];
+    txbuf_f[1] = pIMU_1->euler_angle[PITCH];
+    txbuf_f[2] = pIMU_1->euler_angle[YAW];
 
-    transmit_host(chp, txbuf_d, txbuf_f, 0, 6);
+    transmit_host(chp, txbuf_d, txbuf_f, 0, 3);
   }
 
   while(true)
@@ -71,26 +70,54 @@ static THD_FUNCTION(Host_thread, p)
 }
 
 static THD_WORKING_AREA(Shell_thread_wa, 1024);
-void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
+static void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
 {
-  (void) argc,argv;
+  float data[3] = {0.0f,0.0f,0.0f};
+
+  float flash_test;
+
+  if(argc)
+  {
+    flashRead(IMU_CAL_FLASH, &flash_test, 4);
+    if(isfinite(flash_test))
+    {
+      flashRead(IMU_CAL_FLASH, (char*)(pIMU_1->accelBias), 48);
+      flashRead(IMU_CAL_FLASH + 48, (char*)data, 12);
+    }
+
+    data[0] = -data[0];
+    data[1] = -data[1];
+    data[2] = -data[2];
+
+    flashSectorErase(flashSectorAt(IMU_CAL_FLASH));
+    flashWrite(IMU_CAL_FLASH, (char*)(pIMU_1->accelBias), 48);
+    flashWrite(IMU_CAL_FLASH + 48, (char*)data, 12);
+  }
+
+  flashRead(IMU_CAL_FLASH, &flash_test, 4);
+  if(isfinite(flash_test))
+  {
+    flashRead(IMU_CAL_FLASH, (char*)(pIMU_1->accelBias), 48);
+    flashRead(IMU_CAL_FLASH + 48, (char*)data, 12);
+  }
+
+  chprintf(chp,"%f\r\n",pIMU_1->accelBias[X]);
+  chprintf(chp,"%f\r\n",pIMU_1->accelBias[Y]);
+  chprintf(chp,"%f\r\n",pIMU_1->accelBias[Z]);
 
   chprintf(chp,"%f,%f,%f\r\n",
-    pIMU_1->rot_matrix[0][0],pIMU_1->rot_matrix[0][1],pIMU_1->rot_matrix[0][2]);
+    pIMU_1->accelT[X][X],pIMU_1->accelT[X][Y],pIMU_1->accelT[X][Z]);
   chprintf(chp,"%f,%f,%f\r\n",
-    pIMU_1->rot_matrix[1][0],pIMU_1->rot_matrix[1][1],pIMU_1->rot_matrix[1][2]);
+    pIMU_1->accelT[Y][X],pIMU_1->accelT[Y][Y],pIMU_1->accelT[Y][Z]);
   chprintf(chp,"%f,%f,%f\r\n",
-    pIMU_1->rot_matrix[2][0],pIMU_1->rot_matrix[2][1],pIMU_1->rot_matrix[2][2]);
+    pIMU_1->accelT[Z][X],pIMU_1->accelT[Z][Y],pIMU_1->accelT[Z][Z]);
 
-  float euler_angle[3];
-  rotm2eulerangle(pIMU_1->rot_matrix, euler_angle);
-
-  chprintf(chp,"%f\r\n",euler_angle[ROLL] * 180.0f/M_PI);
-  chprintf(chp,"%f\r\n",euler_angle[PITCH] * 180.0f/M_PI);
-  chprintf(chp,"%f\r\n",euler_angle[YAW] * 180.0f/M_PI);
+  chprintf(chp,"%f\r\n",data[0]);
+  chprintf(chp,"%f\r\n",data[1]);
+  chprintf(chp,"%f\r\n",data[2]);
 }
 
-void cmd_data(BaseSequentialStream * chp, int argc, char *argv[])
+static void cmd_data(BaseSequentialStream * chp, int argc, char *argv[])
 {
   uint8_t sec = 10;
 
@@ -115,10 +142,12 @@ void cmd_data(BaseSequentialStream * chp, int argc, char *argv[])
                     Host_thread, NULL);
 }
 
+/*Definition of shell cmd funtions goes here*/
 static const ShellCommand commands[] =
 {
   {"test", cmd_test},
-  {"data", cmd_data}
+  {"data", cmd_data},
+  {"cal", cmd_calibration}
 };
 
 static const ShellConfig shell_cfg1 =

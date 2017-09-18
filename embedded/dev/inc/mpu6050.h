@@ -2,7 +2,7 @@
 #define _MPU6050_H_
 
 #define MPU6050_UPDATE_FREQ                         1000.0f
-#define MPuU6050_FLASH_ADDR                      0x08040000
+#define IMU_CAL_FLASH                            0x08010000
 
 typedef enum {
   X = 0U,
@@ -45,11 +45,14 @@ typedef struct tagIMUStruct {
   float gyroData[3];      /* Gyroscope data.                 */
   float accelFiltered[3]; /* Filtered accelerometer data.    */
   float gyroFiltered[3];  /* Filtered gyro data.    */
-  float accelBias[3];     /* Accelerometer bias.             */
-  float gyroBias[3];      /* Gyroscope bias.                 */
+
   float qIMU[4];          /* Attitude quaternion of the IMU. */
   float rot_matrix[3][3]; /* Rotation matrix of the IMU. */
   float euler_angle[3];   /* Euler angle of the IMU. */
+
+  float accelBias[3];     /* Accelerometer bias.             */
+  float accelT[3][3];     /* Accelerometer bias matrix       */
+  float gyroBias[3];      /* Gyroscope bias.                 */
 
   I2CDriver* mpu_i2c;
   uint8_t addr;
@@ -59,6 +62,9 @@ typedef struct tagIMUStruct {
   uint8_t inited;
   uint32_t tprev;
   float dt;
+
+  uint8_t accelerometer_not_calibrated;
+  uint8_t gyroscope_not_calibrated;
 } __attribute__((packed)) IMUStruct, *PIMUStruct;
 
 typedef struct {
@@ -81,6 +87,7 @@ extern "C" {
   I2CErrorStruct* mpuGetError(void);
 
   uint8_t mpu6050Init(PIMUStruct pIMU, const IMUConfigStruct* const imu_conf);
+  uint8_t mpu6050GetDataRaw(PIMUStruct pIMU, float AccelRaw[3], float GyroRaw[3]);
   uint8_t mpu6050GetData(PIMUStruct pIMU);
 
 #ifdef __cplusplus

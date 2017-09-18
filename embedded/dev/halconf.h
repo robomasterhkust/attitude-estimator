@@ -30,6 +30,8 @@
 
 #include "mcuconf.h"
 
+#define SERIAL_CMD       &SD3
+#define SERIAL_DATA      &SD3
 #define CHPRINTF_USE_FLOAT TRUE
 /**
  * @brief   Enables the PAL subsystem.
@@ -299,7 +301,7 @@
  *          buffers.
  */
 #if !defined(SERIAL_BUFFERS_SIZE) || defined(__DOXYGEN__)
-#define SERIAL_BUFFERS_SIZE         64
+#define SERIAL_BUFFERS_SIZE         256
 #endif
 
 /*===========================================================================*/

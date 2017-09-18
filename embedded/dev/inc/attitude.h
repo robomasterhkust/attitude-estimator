@@ -8,5 +8,6 @@
 #define GYRO_BIAS_MAX  0.05f
 
 uint8_t attitude_imu_init(PIMUStruct pIMU, const IMUConfigStruct* const imu_conf);
+uint8_t attitude_update(PIMUStruct pIMU);
 
 #endif
