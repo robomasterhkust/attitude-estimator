@@ -17,7 +17,6 @@
  * The difference between 1 and the least value greater than 1 that is
  * representable in the given floating-point type, b1-p.
  */
-#define FLT_EPSILON        1.1920929e-07F
 
 /**
  * @brief: inverse know square matrix
