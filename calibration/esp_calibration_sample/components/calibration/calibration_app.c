@@ -247,10 +247,12 @@ static bool calculate_calibration_values(unsigned short sensor, float g)
     }
 
     /**
-     * fill matrix A for linear equation A * x = b
+     * fill matrix A for linear equation accel_T * A = [g 0 0]
+                                                       [0 g 0]
+                                                       [0 0 g]
+     * accel_T is the Affine transformation
      * A is the measurement without offset
-     * x is the rotation matrix in Affine model
-     * b is the reference matrix, [g 0 0; 0 g 0; 0 0 g] = eyes(3) * g
+     * right hand side is the reference matrix, [g 0 0; 0 g 0; 0 0 g] = eyes(3) * g
      */
     float mat_A[3][3] = { 0 };
 
