@@ -85,6 +85,7 @@ static void imuStructureInit(PIMUStruct pIMU, const IMUConfigStruct* const imu_c
 {
   /* Initialize to zero. */
   memset((void *)pIMU, 0, sizeof(IMUStruct));
+  pIMU->imu_Thd = NULL;
 
   pIMU->mpu_i2c = imu_conf->mpu_i2c;
   pIMU->addr = imu_conf->a0_high;

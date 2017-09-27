@@ -15,20 +15,17 @@
 */
 #include "main.h"
 
-thread_reference_t imu_Thd = NULL;
-
-static PIMUStruct pIMU_1;
+static PIMUStruct pIMU;
 static const IMUConfigStruct imu1_conf = {&I2CD1, MPU6050_I2C_ADDR_A0_LOW,
    MPU6050_ACCEL_SCALE_8G, MPU6050_GYRO_SCALE_1000};
 
-static THD_WORKING_AREA(IMU_thread_wa, 4096);
-static THD_FUNCTION(IMU_thread, p)
+static THD_WORKING_AREA(Attitude_thread_wa, 4096);
+static THD_FUNCTION(Attitude_thread, p)
 {
-  (void)p;
   chRegSetThreadName("IMU Attitude Estimator");
   uint8_t errorCode;
 
-  pIMU_1 = mpu6050_get();
+  PIMUStruct pIMU_1 = (PIMUStruct)p;
 
   chThdSleepMilliseconds(100);
   errorCode = attitude_imu_init(pIMU_1, &imu1_conf);
@@ -60,7 +57,7 @@ static THD_FUNCTION(IMU_thread, p)
     if(pIMU_1->accelerometer_not_calibrated || pIMU_1->gyroscope_not_calibrated)
     {
       chSysLock();
-      chThdSuspendS(&imu_Thd);
+      chThdSuspendS(&(pIMU_1->imu_Thd));
       chSysUnlock();
     }
   }
@@ -85,15 +82,16 @@ int main(void) {
 
   tft_init(TFT_HORIZONTAL, CYAN, BLACK, BLACK);
 
-  chThdCreateStatic(IMU_thread_wa, sizeof(IMU_thread_wa),
+  pIMU = mpu6050_get();
+  chThdCreateStatic(Attitude_thread_wa, sizeof(Attitude_thread_wa),
                     NORMALPRIO + 5,
-                    IMU_thread, NULL);
+                    Attitude_thread, pIMU);
 
   while (true)
   {
-    tft_printf(1,1,"Roll: %4d", (int16_t)(pIMU_1->euler_angle[ROLL] * 180.0f/M_PI));
-    tft_printf(1,2,"Pitch:%4d", (int16_t)(pIMU_1->euler_angle[PITCH] * 180.0f/M_PI));
-    tft_printf(1,3,"Yaw:  %4d", (int16_t)(pIMU_1->euler_angle[YAW] * 180.0f/M_PI));
+    tft_printf(1,1,"Roll: %4d", (int16_t)(pIMU->euler_angle[ROLL] * 180.0f/M_PI));
+    tft_printf(1,2,"Pitch:%4d", (int16_t)(pIMU->euler_angle[PITCH] * 180.0f/M_PI));
+    tft_printf(1,3,"Yaw:  %4d", (int16_t)(pIMU->euler_angle[YAW] * 180.0f/M_PI));
 
     chThdSleepMilliseconds(50);
   }

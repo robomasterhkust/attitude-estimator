@@ -15,7 +15,6 @@ static uint8_t   calibration_state_record     = 0;
 
 static float accel_ref[SIDE_COUNT_MAX][3];
 
-extern thread_reference_t imu_Thd;
 /**
  * @brief detect the accelerometer direction
  * @require a_m_s2_sync after syncronized
@@ -248,7 +247,7 @@ static uint8_t read_gyrscope_avg(PIMUStruct pIMU, const uint32_t samples_num)
   chprintf(chp,"\r\n");
 
   for (i = 0; i < 3; i++)
-    pIMU->gyroBias[i] = gyro_sum[i] / counts;
+    pIMU->gyroBias[i] = -gyro_sum[i] / counts;
 
   return true;
 }
@@ -413,5 +412,5 @@ void cmd_calibration(BaseSequentialStream * chp, int argc, char *argv[])
   flashSectorErase(flashSectorAt(IMU_CAL_FLASH));
   flashWrite(IMU_CAL_FLASH, (char*)(pIMU->accelBias), 60);
 
-  chThdResume(&imu_Thd, MSG_OK);
+  chThdResume(&(pIMU->imu_Thd), MSG_OK);
 }

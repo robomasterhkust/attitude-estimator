@@ -138,7 +138,7 @@ static void cmd_data(BaseSequentialStream * chp, int argc, char *argv[])
   chThdSleepSeconds(sec);
 
   chThdCreateStatic(Host_thread_wa, sizeof(Host_thread_wa),
-  NORMALPRIO,
+                    NORMALPRIO,
                     Host_thread, NULL);
 }
 

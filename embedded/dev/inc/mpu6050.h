@@ -47,11 +47,11 @@ typedef struct tagIMUStruct {
   float gyroFiltered[3];  /* Filtered gyro data.    */
 
   float qIMU[4];          /* Attitude quaternion of the IMU. */
-  float rot_matrix[3][3]; /* Rotation matrix of the IMU. */
   float euler_angle[3];   /* Euler angle of the IMU. */
+  float d_euler_angle[3]; /* Euler angle changing rate of the IMU. */
 
   float accelBias[3];     /* Accelerometer bias.             */
-  float accelT[3][3];     /* Accelerometer bias matrix       */
+  float accelT[3][3];     /* Accelerometer rotational bias matrix       */
   float gyroBias[3];      /* Gyroscope bias.                 */
 
   I2CDriver* mpu_i2c;
@@ -62,6 +62,7 @@ typedef struct tagIMUStruct {
   uint8_t inited;
   uint32_t tprev;
   float dt;
+  thread_reference_t imu_Thd;
 
   uint8_t accelerometer_not_calibrated;
   uint8_t gyroscope_not_calibrated;

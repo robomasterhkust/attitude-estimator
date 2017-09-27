@@ -109,7 +109,8 @@ uint8_t attitude_imu_init(PIMUStruct pIMU, const IMUConfigStruct* const imu_conf
   uint8_t i;
   uint32_t tick = chVTGetSystemTimeX();
 
-  for (i = 0; i < 200U; i++) {
+  for (i = 0; i < 200U; i++)
+  {
     mpu6050GetData(pIMU);
     if(vector_norm(pIMU->gyroData,3) < 0.175f)
       imu_lpfilterapply(pIMU);
@@ -119,20 +120,21 @@ uint8_t attitude_imu_init(PIMUStruct pIMU, const IMUConfigStruct* const imu_conf
     chThdSleepMilliseconds(1);
   }
 
-  //float rot_matrix[3][3];
+  float rot_matrix[3][3];
 
   float norm = vector_norm(pIMU->accelFiltered,3);
   for (i = 0; i < 3; i++)
-    pIMU->rot_matrix[2][i] = pIMU->accelFiltered[i] / norm;
+    rot_matrix[2][i] = pIMU->accelFiltered[i] / norm;
 
-  norm = sqrtf(pIMU->rot_matrix[2][2]*pIMU->rot_matrix[2][2] +
-    pIMU->rot_matrix[2][0]*pIMU->rot_matrix[2][0]);
+  norm = sqrtf(rot_matrix[2][2]*rot_matrix[2][2] +
+    rot_matrix[2][0]*rot_matrix[2][0]);
 
-  pIMU->rot_matrix[0][0] = pIMU->rot_matrix[2][2] / norm;
-  pIMU->rot_matrix[0][2] = pIMU->rot_matrix[2][0] / norm;
+  rot_matrix[0][0] = rot_matrix[2][2] / norm;
+  rot_matrix[0][1] = 0.0f;
+  rot_matrix[0][2] = rot_matrix[2][0] / norm;
 
-  vector3_cross(pIMU->rot_matrix[2], pIMU->rot_matrix[0], pIMU->rot_matrix[1]);
-  rotm2quarternion(pIMU->rot_matrix, pIMU->qIMU);
+  vector3_cross(rot_matrix[2], rot_matrix[0], rot_matrix[1]);
+  rotm2quarternion(rot_matrix, pIMU->qIMU);
 
   return IMU_OK;
 }
