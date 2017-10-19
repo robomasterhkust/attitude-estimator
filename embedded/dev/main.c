@@ -80,12 +80,15 @@ int main(void) {
 
   shellStart();
 
+  gyro_init();
+
   tft_init(TFT_HORIZONTAL, CYAN, BLACK, BLACK);
 
   pIMU = mpu6050_get();
-  chThdCreateStatic(Attitude_thread_wa, sizeof(Attitude_thread_wa),
-                    NORMALPRIO + 5,
-                    Attitude_thread, pIMU);
+
+//  chThdCreateStatic(Attitude_thread_wa, sizeof(Attitude_thread_wa),
+//                    NORMALPRIO + 5,
+//                    Attitude_thread, pIMU);
 
   while (true)
   {
@@ -93,6 +96,7 @@ int main(void) {
     tft_printf(1,2,"Pitch:%4d", (int16_t)(pIMU->euler_angle[PITCH] * 180.0f/M_PI));
     tft_printf(1,3,"Yaw:  %4d", (int16_t)(pIMU->euler_angle[YAW] * 180.0f/M_PI));
 
+    palTogglePad(GPIOB,GPIOB_LED);
     chThdSleepMilliseconds(50);
   }
 

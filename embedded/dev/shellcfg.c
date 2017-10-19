@@ -72,49 +72,7 @@ static THD_FUNCTION(Host_thread, p)
 static THD_WORKING_AREA(Shell_thread_wa, 1024);
 static void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
 {
-  float data[3] = {0.0f,0.0f,0.0f};
-
-  float flash_test;
-
-  if(argc)
-  {
-    flashRead(IMU_CAL_FLASH, &flash_test, 4);
-    if(isfinite(flash_test))
-    {
-      flashRead(IMU_CAL_FLASH, (char*)(pIMU_1->accelBias), 48);
-      flashRead(IMU_CAL_FLASH + 48, (char*)data, 12);
-    }
-
-    data[0] = -data[0];
-    data[1] = -data[1];
-    data[2] = -data[2];
-
-    flashSectorErase(flashSectorAt(IMU_CAL_FLASH));
-    flashWrite(IMU_CAL_FLASH, (char*)(pIMU_1->accelBias), 48);
-    flashWrite(IMU_CAL_FLASH + 48, (char*)data, 12);
-  }
-
-  flashRead(IMU_CAL_FLASH, &flash_test, 4);
-  if(isfinite(flash_test))
-  {
-    flashRead(IMU_CAL_FLASH, (char*)(pIMU_1->accelBias), 48);
-    flashRead(IMU_CAL_FLASH + 48, (char*)data, 12);
-  }
-
-  chprintf(chp,"%f\r\n",pIMU_1->accelBias[X]);
-  chprintf(chp,"%f\r\n",pIMU_1->accelBias[Y]);
-  chprintf(chp,"%f\r\n",pIMU_1->accelBias[Z]);
-
-  chprintf(chp,"%f,%f,%f\r\n",
-    pIMU_1->accelT[X][X],pIMU_1->accelT[X][Y],pIMU_1->accelT[X][Z]);
-  chprintf(chp,"%f,%f,%f\r\n",
-    pIMU_1->accelT[Y][X],pIMU_1->accelT[Y][Y],pIMU_1->accelT[Y][Z]);
-  chprintf(chp,"%f,%f,%f\r\n",
-    pIMU_1->accelT[Z][X],pIMU_1->accelT[Z][Y],pIMU_1->accelT[Z][Z]);
-
-  chprintf(chp,"%f\r\n",data[0]);
-  chprintf(chp,"%f\r\n",data[1]);
-  chprintf(chp,"%f\r\n",data[2]);
+  chprintf(chp,"gyro_state:%d\r\n",gyro_angle);
 }
 
 static void cmd_data(BaseSequentialStream * chp, int argc, char *argv[])
