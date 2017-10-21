@@ -2,9 +2,10 @@
 #include "hal.h"
 #include "math_misc.h"
 
-#include "calibrate_imu.h"
+#include "calibrate_sensor.h"
 #include "flash.h"
 #include "chprintf.h"
+#include <string.h>
 
 static BaseSequentialStream* chp = (BaseSequentialStream*)SERIAL_CMD;
 
@@ -183,6 +184,7 @@ static uint8_t read_accelerometer_avg(PIMUStruct pIMU, const uint8_t orient, con
 
   const uint32_t sample_num_mod_20 = samples_num/20;
   uint32_t count_samplenum_20 = sample_num_mod_20;
+  chprintf(chp,"....................\r");
 
   while (counts < samples_num)
   {
@@ -224,12 +226,13 @@ static uint8_t read_gyrscope_avg(PIMUStruct pIMU, const uint32_t samples_num)
 
   const uint32_t sample_num_mod_20 = samples_num/20;
   uint32_t count_samplenum_20 = sample_num_mod_20;
+  chprintf(chp,"....................\r");
 
   while (counts < samples_num)
   {
     if(mpu6050GetDataRaw(pIMU, accelData, gyroData) != IMU_OK)
     {
-      chprintf(chp,"E:IMU Reading Error!\r\n");
+      chprintf(chp,"\nE:IMU Reading Error!\r\n");
       return false;
     }
     for (i = 0; i < 3; i++)
@@ -398,8 +401,9 @@ void calibrate_gyroscope(PIMUStruct pIMU)
   }
 }
 
-void cmd_calibration(BaseSequentialStream * chp, int argc, char *argv[])
+void cmd_calibrate_imu(BaseSequentialStream * chp, int argc, char *argv[])
 {
+
   PIMUStruct pIMU = mpu6050_get();
 
   pIMU->gyroscope_not_calibrated = true;
@@ -413,4 +417,71 @@ void cmd_calibration(BaseSequentialStream * chp, int argc, char *argv[])
   flashWrite(IMU_CAL_FLASH, (char*)(pIMU->accelBias), 60);
 
   chThdResume(&(pIMU->imu_Thd), MSG_OK);
+}
+
+uint8_t gyro_cal(PGyroStruct pGyro, const uint8_t full_cal)
+{
+  int32_t gyro_zero = 0;
+  uint16_t i = 0;
+
+	if (pGyro->state == NOT_INITED)
+	{
+    chprintf(chp,"Gyro not inited!\r\n");
+    return -1;
+  }
+
+  int32_t sample_num;
+  if(full_cal)
+    sample_num = 1024;
+  else
+    sample_num = 128;
+
+  pGyro->state = CALIBRATING;
+  chprintf(chp, "reading Gyro...\r\n");
+  chprintf(chp, "....................\r")
+
+  uint16_t count_samplenum_20 = sample_num/20;
+  uint16_t sample_num_mod_20 = sample_num/20;
+
+  for (i = 0; i < sample_num; i++)
+  {
+      if (i >= sample_num/2)
+        gyro_zero += gyro_get_vel(pGyro);
+
+      if(counts > count_samplenum_20)
+      {
+        chprintf(chp,"=");
+        count_samplenum_20 += sample_num_mod_20;
+      }
+
+			chThdSleepMilliseconds(4);
+  }
+  chprintf(chp,"\r\n");
+  chprintf(chp,"Calibration complete\r\n")
+
+  gyro_zero /= -sample_num;
+
+
+  #if defined(GYRO_ADIS)
+    uint16_t* txbuf = &gyro_zero;
+    gyro_write(pGyro, GYRO_OFF, *txbuf);
+    gyro_write(pGyro, GYRO_COMD, 0x0008);
+	  chThdSleepMilliseconds(100); //nessasary. otherwise will fly
+
+    chprintf(chp,"gyro_offset: %d",gyro_get_off(pGyro));
+  #endif
+
+	pGyro->state = INITED;
+  return 0;
+}
+
+void cmd_calibrate_gyro(BaseSequentialStream * chp, int argc, char *argv[])
+{
+
+  PGyroStruct pGyro = gyro_get();
+
+  if(argc && !strcpy(argv[0],"full"))
+    gyro_cal(pGyro,true);
+  else
+    gyro_cal(pGyro,false);
 }

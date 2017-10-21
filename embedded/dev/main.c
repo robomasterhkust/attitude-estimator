@@ -16,6 +16,8 @@
 #include "main.h"
 
 static PIMUStruct pIMU;
+static PGyroStruct pGyro;
+
 static const IMUConfigStruct imu1_conf = {&I2CD1, MPU6050_I2C_ADDR_A0_LOW,
    MPU6050_ACCEL_SCALE_8G, MPU6050_GYRO_SCALE_1000};
 
@@ -80,7 +82,7 @@ int main(void) {
 
   shellStart();
 
-  gyro_init();
+  pGyro = gyro_init();
 
   tft_init(TFT_HORIZONTAL, CYAN, BLACK, BLACK);
 

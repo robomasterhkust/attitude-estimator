@@ -12,7 +12,7 @@
 #include "mpu6050.h"
 #include "adi_gyro.h"
 #include "attitude.h"
-#include "calibrate_imu.h"
+#include "calibrate_sensor.h"
 
 void shellStart(void);
 

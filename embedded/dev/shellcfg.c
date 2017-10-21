@@ -72,7 +72,7 @@ static THD_FUNCTION(Host_thread, p)
 static THD_WORKING_AREA(Shell_thread_wa, 1024);
 static void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
 {
-  chprintf(chp,"gyro_state:%d\r\n",gyro_angle);
+  //chprintf(chp,"gyro_angle:%d\r\n",output_angle);
 }
 
 static void cmd_data(BaseSequentialStream * chp, int argc, char *argv[])
@@ -105,7 +105,8 @@ static const ShellCommand commands[] =
 {
   {"test", cmd_test},
   {"data", cmd_data},
-  {"cal", cmd_calibration}
+  {"calimu", cmd_calibrate_imu},
+  {"calgyro", cmd_calibrate_gyro},
 };
 
 static const ShellConfig shell_cfg1 =
