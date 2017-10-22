@@ -4,7 +4,6 @@
  *  Created on: 2016��6��2��
  *      Author: lenovo
  */
-#include "ch.h"
 #include "hal.h"
 
 #include "flash.h"

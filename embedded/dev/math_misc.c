@@ -14,9 +14,6 @@ void lpfilter_init(lpfilterStruct* const lp,
   lp->b2 = lp->b0;
   lp->a1 = 2.0f * (ohm * ohm - 1.0f) / c;
   lp->a2 = (1.0f - 2.0f * cosf(M_PI / 4.0f) * ohm + ohm * ohm) / c;
-
-  lp->data[0] = 0.0f;
-  lp->data[1] = 0.0f;
 }
 
 float lpfilter_apply(lpfilterStruct* const lp, const float input)

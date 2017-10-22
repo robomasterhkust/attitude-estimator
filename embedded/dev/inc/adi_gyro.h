@@ -9,12 +9,20 @@
 #else
   #error "Multiple gyro config file found, stop"
 #endif
+
+typedef enum{
+  GYRO_PSC_320 = 0,
+  GYRO_PSC_160,
+  GYRO_PSC_80
+} gyro_psc_conf_t;
+
 /*==================USER CONFIGURATION==================*/
 /* Update frequency of Gyro in Hz */
-#define GYRO_UPDATE_FREQ  200U
+#define GYRO_UPDATE_FREQ  500U
 
 /* User SPI interface configuration */
 #define GYRO_SPI				&SPID3
+#define GYRO_PSC_CONF   GYRO_PSC_320 // setting the Dynamic Range 320/sec
 
 #define GYRO_MOSI        GPIOC_PIN12
 #define GYRO_MISO				 GPIOC_PIN11
@@ -29,8 +37,10 @@
 
 /*==========END OF USER CONFIGURATION==================*/
 
-#define GYRO_ANG_VEL_TH 		       10
-#define GYRO_SCALE 				350.4661806	//		1 / (0.07326 * 3.908ms ) / 10 =349.2838703
+#define GYRO_ANG_VEL_TH 		  0.0080f
+#define GYRO_PSC     			0.00127863f
+
+#define GYRO_CAL_FLASH    0x08012000
 
 #define GYRO_FLASH			0x01
 #define GYRO_POWER			0x03
@@ -39,6 +49,7 @@
 #define GYRO_TEMP				0x0D
 #define GYRO_ANGL				0x0F
 #define GYRO_OFF				0x15
+#define GYRO_SCALE	  	0x17
 #define GYRO_COMD				0x3F
 #define GYRO_SENS				0x39
 #define GYRO_SMPL				0x37
@@ -61,14 +72,14 @@ typedef struct {
   uint8_t error_flag;
   SPIDriver* spid;
 
-  uint8_t angle_updated;
-  float angle_vel; //angle velocity of Gyro
+  float psc;
+  float angle_vel;
+  float offset;
   lpfilterStruct* lpf; //low pass filter for gyro
 
   volatile float angle; //Measured Gyro Angle In Rad
 } GyroStruct, *PGyroStruct;
 
-extern int32_t gyro_angle;
 extern int32_t gyro_comb;
 extern int32_t gyro_temp;
 
@@ -76,8 +87,14 @@ PGyroStruct gyro_get(void);
 PGyroStruct gyro_init(void);
 //init ADIS gyro
 
-int16_t gyro_get_off(PGyroStruct pGyro);				//read offset(result of callibration) for angular velocity
+int16_t gyro_get_raw_vel(PGyroStruct pGyro);
+float gyro_get_offs(PGyroStruct pGyro);				//read offset(result of callibration) for angular velocity
+void gyro_update_offs(PGyroStruct pGyro, const int16_t offs); //update offset from calibration value
 void gyro_set_angle(const float angle);
+uint16_t gyro_get_flash(PGyroStruct pGyro);			//read number of flash for the rom un gyro
+uint16_t gyro_get_power(PGyroStruct pGyro);	 	  //return milli-volt
+uint16_t gyro_get_adc(PGyroStruct pGyro);		  	//return milli-volt
+uint16_t gyro_get_temp(PGyroStruct pGyro); 		  //return milli-degree
 
 extern float yaw_pid_output_angle;
 

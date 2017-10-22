@@ -1,8 +1,6 @@
 #ifndef __CALIBRATE_IMU_H_
 #define __CALIBRATE_IMU_H_
 
-#include "mpu6050.h"
-#include "adi_gyro.h"
 /**
  *  @brief calibration states record
  */
@@ -30,6 +28,6 @@ enum calibration_state  // Declare the calibration enum states
 };
 
 void cmd_calibrate_imu(BaseSequentialStream * chp, int argc, char *argv[]);
-void cmd_calibrate_gyro(BaseSequentialStream * chp, int argc, char *argv[])
+void cmd_calibrate_gyro(BaseSequentialStream * chp, int argc, char *argv[]);
 
 #endif
